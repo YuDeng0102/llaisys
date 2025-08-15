@@ -10,16 +10,16 @@ void rms_norm(tensor_t out, tensor_t in, tensor_t weight, float eps) {
     }
 
     if (out->deviceType() == LLAISYS_DEVICE_CPU) {
-        cpu::rms_norm_cpu_2d(out, in, weight, eps);
+        return cpu::rms_norm_cpu_2d(out, in, weight, eps);
     }
 
     switch (out->deviceType()) {
     case LLAISYS_DEVICE_CPU:
-        cpu::rms_norm_cpu_2d(out, in, weight, eps);
+        return cpu::rms_norm_cpu_2d(out, in, weight, eps);
         break;
 #ifdef ENABLE_NVIDIA_API
     case LLAISYS_DEVICE_NVIDIA:
-        cuda::rms_norm_nvidia(out, in, weight, eps);
+        return cuda::rms_norm_nvidia(out, in, weight, eps);
         break;
 #endif
     default:
