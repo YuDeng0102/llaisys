@@ -191,6 +191,8 @@ $$
 - `weight`: weight $W$ . 2D contiguous tensor. Note that weight tensor is not transposed. You need to deal with this during your calculation.
 - `bias` (optional): bias $b$ . 1D tensor. You need to support the situation where bias is not provided.
 
+You should be able to pass the test cases in `test/ops/linear.py` after you finish the implementation.
+
 ### Task-2.4 rms normalization
 
 ```c++
@@ -200,15 +202,15 @@ void rms_norm(tensor_t out, tensor_t in, tensor_t weight, float eps);
 Compute the following for each row:
 
 $$
-Y_i = \frac{W_i \times  X_i}{\sqrt{(\sum_{j=1}^n X_j^2) + \epsilon}}
+Y_i = \frac{W_i \times  X_i}{\sqrt{\frac{1}{d}(\sum_{j=1}^d X_j^2) + \epsilon}}
 $$
 
 - `out`: output $Y$ . You can assume output is a 2D contiguous tensor and no broadcasting is involved for now.
-- `input`: input $X$ . You can assume input is a 2D contiguous tensor and no broadcasting is involved for now. The normalization is performed along the last dimension (a.k.a. each row) of the input tensor.
+- `input`: input $X$ . You can assume input is a 2D contiguous tensor and no broadcasting is involved for now. The normalization is performed along the last dimension (a.k.a. each row of length $d$ ) of the input tensor.
 - `weight`: weight $W$ . 1D tensor, same length as a row of input tensor.
 - `eps`: small value $\epsilon$ to avoid division by zero.
 
-You should be able to pass the test cases in `test/ops/linear.py` after you finish the implementation.
+You should be able to pass the test cases in `test/ops/rms_norm.py` after you finish the implementation.
 
 ### Task-2.5 rope
 
