@@ -95,6 +95,7 @@ target("llaisys-ops")
     on_install(function (target) end)
 target_end()
 
+target_end()
 target("llaisys")
     set_kind("shared")
     add_deps("llaisys-utils")
@@ -102,10 +103,13 @@ target("llaisys")
     add_deps("llaisys-core")
     add_deps("llaisys-tensor")
     add_deps("llaisys-ops")
-
+  
     set_languages("cxx17")
     set_warnings("all", "error")
     add_files("src/llaisys/*.cc")
+    add_files("src/llaisys/models/*.cc")
+    add_files("src/models/*.cpp")
+   
     set_installdir(".")
 
     

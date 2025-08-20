@@ -1,5 +1,6 @@
 #include "self_attention.hpp"
 #include "llaisys.h"
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <iostream>
@@ -12,21 +13,29 @@ void self_attention_(T *attn_val, T *Q, T *K, T *V, float scale, size_t seq_len,
     auto attn_weight = std::vector(seq_len, std::vector(total_len, 0.0f));
     for (size_t h = 0; h < nh; h++) {
         size_t hkv = h / (nh / nkvh);
-        float sum = 0, max_val = -std::numeric_limits<float>::infinity();
+        float sum = 0;
+        // size_t max_idx = std::numeric_limits<size_t>::max();
         for (size_t i = 0; i < seq_len; i++) {
             for (size_t j = 0; j <= i; j++) {
                 attn_weight[i][j] = 0;
                 for (size_t k = 0; k < d; k++) {
                     attn_weight[i][j] += llaisys::utils::cast<float>(Q[i * nh * d + h * d + k]) * llaisys::utils::cast<float>(K[j * nkvh * d + hkv * d + k]) * scale;
                 }
-                if (attn_weight[i][j] > max_val) {
-                    max_val = attn_weight[i][j];
-                }
             }
             sum = 0;
+            float max_val = *std::max_element(attn_weight[i].begin(), attn_weight[i].begin() + i + 1);
             for (size_t j = 0; j <= i; j++) {
                 sum += std::exp(attn_weight[i][j] - max_val);
             }
+            // // 特殊处理
+            if (sum == 0) {
+                // for (size_t j = 0; j <= i; j++) {
+                //     attn_weight[i][j] = 0.0f;
+                // }
+                //     attn_weight[i][max_idx] = 1.0f;
+                std::cerr << "sum is 0 in self-attention" << std::endl;
+            }
+
             for (size_t j = 0; j <= i; j++) {
                 attn_weight[i][j] = std::exp(attn_weight[i][j] - max_val) / sum;
             }

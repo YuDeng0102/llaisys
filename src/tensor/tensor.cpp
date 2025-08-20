@@ -316,4 +316,12 @@ tensor_t Tensor::to(llaisysDeviceType_t device_type, int device) const {
     return std::shared_ptr<Tensor>(new Tensor(_meta, _storage));
 }
 
+tensor_t Tensor::copy() const {
+    // 必须连续内存
+    tensor_t res = create(_meta.shape, _meta.dtype, deviceType(), deviceId());
+    core::context().runtime().api()->memcpy_sync(
+        res->data(), data(), numel() * elementSize(), LLAISYS_MEMCPY_D2D);
+    return res;
+}
+
 } // namespace llaisys

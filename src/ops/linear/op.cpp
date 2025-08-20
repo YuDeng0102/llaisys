@@ -15,7 +15,10 @@ void linear(tensor_t out, tensor_t in, tensor_t weight, tensor_t bias) {
             throw std::runtime_error("linear op only support contiguous bias");
         }
     }
-
+    // check shape
+    if (weight->shape()[1] != *in->shape().rbegin() || weight->shape()[0] != *out->shape().rbegin()) {
+        throw std::runtime_error("linear op shape error");
+    }
     if (out->deviceType() == LLAISYS_DEVICE_CPU) {
         return cpu::linear2d(out, in, weight, bias);
     }

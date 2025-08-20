@@ -38,7 +38,6 @@ class DataType(IntEnum):
 
 llaisysDataType_t = ctypes.c_int
 
-
 # Memory Copy Kind enum
 class MemcpyKind(IntEnum):
     H2H = 0
@@ -52,6 +51,34 @@ llaisysMemcpyKind_t = ctypes.c_int
 # Stream type (opaque pointer)
 llaisysStream_t = ctypes.c_void_p
 
+
+def llaisysDataTypeStrtoCType(data_type: str):
+    if data_type == "bfloat16":
+        return DataType.BF16
+    elif data_type == "float16":
+        return DataType.F16
+    elif data_type == "float32":
+        return DataType.F32
+    elif data_type == "int8":
+        return DataType.I8
+    elif data_type == "int16":
+        return DataType.I16
+    elif data_type == "int32":
+        return DataType.I32
+    elif data_type == "int64":
+        return DataType.I64
+    elif data_type == "uint8":
+        return DataType.U8
+    elif data_type == "uint16":
+        return DataType.U16
+    elif data_type == "uint32":
+        return DataType.U32
+    elif data_type == "uint64":
+        return DataType.U64
+    else:
+        raise ValueError(f"Unknown data type: {data_type}")
+    
+    
 __all__ = [
     "llaisysDeviceType_t",
     "DeviceType",
@@ -60,4 +87,5 @@ __all__ = [
     "llaisysMemcpyKind_t",
     "MemcpyKind",
     "llaisysStream_t",
+    "llaisysDataTypeStrtoCType"
 ]
