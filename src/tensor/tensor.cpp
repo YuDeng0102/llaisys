@@ -1,6 +1,7 @@
 #include "tensor.hpp"
 
 #include "../utils.hpp"
+#include "llaisys.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -280,17 +281,39 @@ tensor_t Tensor::slice(size_t dim, size_t start, size_t end) const {
 
     // 计算新的偏移量
     size_t new_offset = _offset + _meta.strides[dim] * start * elementSize();
-    // // 创建新的TensorMeta
-    // std::cerr<<"new_offset:"<<new_offset<<std::endl;
-    // //打印storage的元素
-    // auto storage_data = reinterpret_cast<int64_t*>(_storage->memory());
-    // for (size_t i = 0; i < _storage->size()/sizeof(int64_t); i++) {
-    //     std::cerr<<"storage_data["<<i<<"]:"<<storage_data[i]<<std::endl;
-    // }
 
     TensorMeta new_meta{_meta.dtype, new_shape, new_strides};
 
     return std::shared_ptr<Tensor>(new Tensor(new_meta, _storage, new_offset));
+}
+
+// 目前只实现了最高维度上的，用于kv-cache拼接
+tensor_t Tensor::cat(const tensor_t &other, size_t dim = 0, tensor_t out = nullptr) const {
+    if (dim >= _meta.shape.size() || dim >= other->_meta.shape.size()) {
+        throw std::runtime_error("Dimension out of range for concatenation.");
+    }
+
+    // 检查其他维度是否匹配
+    for (size_t i = 0; i < _meta.shape.size(); ++i) {
+        if (i != dim && _meta.shape[i] != other->_meta.shape[i]) {
+            throw std::runtime_error("Shapes do not match for concatenation.");
+        }
+    }
+
+    // 计算新的形状和步长
+    std::vector<size_t> new_shape = _meta.shape;
+    new_shape[dim] += other->_meta.shape[dim];
+    std::vector<ptrdiff_t> new_strides = _meta.strides;
+
+    tensor_t new_tensor = out == nullptr ? create(new_shape, this->dtype(), this->deviceType(), this->deviceId()) : out;
+    core::context().runtime().api()->memcpy_sync(
+        new_tensor->data(), this->data(), this->numel() * this->elementSize(),
+        LLAISYS_MEMCPY_D2D);
+    size_t offset = this->numel() * this->elementSize();
+    core::context().runtime().api()->memcpy_sync(
+        new_tensor->data() + offset, other->data(), other->numel() * other->elementSize(),
+        LLAISYS_MEMCPY_D2D);
+    return new_tensor;
 }
 
 void Tensor::load(const void *src_) {

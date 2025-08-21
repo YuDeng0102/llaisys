@@ -159,18 +159,18 @@ class Qwen2:
         if not inputs:
             inputs = [self.bos_token_id]
             
-        result=inputs
+        result=inputs.copy()  # 
         # token=self.qwen2.contents.model.meta.bos_token_id
         new_token_len,next_token=0,self.bos_token_id
        
         while new_token_len < max_new_tokens:
-       
             next_token = LIB_LLAISYS.llaisysQwen2ModelInfer(
                 self.qwen2,
                 (c_int64 * len(inputs))(*inputs),
                 len(inputs),
             )
             result.append(next_token)
+            inputs=[next_token]
             new_token_len+=1
             if next_token == self.end_token_id:
                 break

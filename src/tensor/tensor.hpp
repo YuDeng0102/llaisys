@@ -47,6 +47,7 @@ public:
     tensor_t permute(const std::vector<size_t> &order) const;
     tensor_t slice(size_t dim, size_t start, size_t end) const;
     tensor_t view(const std::vector<size_t> &shape) const;
+    tensor_t cat(const tensor_t &other, size_t dim, tensor_t out) const;
 
     // Load data from host memory
     void load(const void *src);

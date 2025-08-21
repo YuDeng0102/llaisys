@@ -6,12 +6,15 @@
 #include "llaisys/tensor.h"
 #include <cmath>
 #include <memory>
+#include <vector>
 namespace llaisys::models {
 struct Qwen2 {
     std::shared_ptr<LlaisysQwen2Meta> meta;
     std::shared_ptr<LlaisysQwen2Weights> weights;
     llaisysDeviceType_t device;
     std::vector<int> device_ids;
+    std::vector<tensor_t> kv_cache_k, kv_cache_v; // 每层的kv-cache
+
     int64_t Infer(int64_t *token_ids, size_t ntoken);
     ~Qwen2();
 };

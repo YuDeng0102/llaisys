@@ -56,6 +56,9 @@ Qwen2_t createQwen2(const LlaisysQwen2Meta *meta, llaisysDeviceType_t device, in
     qwen2->weights->mlp_down_w = new llaisysTensor_t[meta->nlayer];
     qwen2->weights->mlp_up_w = new llaisysTensor_t[meta->nlayer];
 
+    qwen2->kv_cache_k.resize(meta->nlayer);
+    qwen2->kv_cache_v.resize(meta->nlayer);
+
     return qwen2;
 }
 
@@ -86,47 +89,62 @@ int64_t Qwen2::Infer(int64_t *token_ids, size_t ntoken) {
     // embedding
     tensor_t input_ids = Tensor::create({ntoken}, LLAISYS_DTYPE_I64, device, device_ids[0]);
     input_ids->load(token_ids);
+
     tensor_t input_embedding = Tensor::create({ntoken, meta->hs}, meta->dtype, device, device_ids[0]);
     llaisys::ops::embedding(input_embedding, input_ids, weights->in_embed->tensor);
-
+    size_t kvlen = kv_cache_k[0] != nullptr ? kv_cache_k[0]->shape()[0] : 0, total_len = kvlen + ntoken;
     // // for debug
     // std::vector<size_t> slice_indices = {
     //     ntoken - 5, ntoken, // slice from ntoken-5 to ntoken
     //     0, 1, 0, 5};
 
     for (size_t i = 0; i < meta->nlayer; i++) {
-        // std::cerr << "layer: " << i << std::endl;
-
         // GetSmallPartSlice(input_embedding, slice_indices)->debug();
         tensor_t hidden_states = input_embedding->copy();
         // layer-norm
 
         llaisys::ops::rms_norm(hidden_states, hidden_states, weights->attn_norm_w[i]->tensor, meta->epsilon);
-        // 计算q,k,v
+        // 计算当前序列q,k,v
         tensor_t q = Tensor::create({ntoken, meta->dh * meta->nh}, meta->dtype, device, device_ids[0]);
-        tensor_t k = Tensor::create({ntoken, meta->dh * meta->nkvh}, meta->dtype, device, device_ids[0]);
-        tensor_t v = Tensor::create({ntoken, meta->dh * meta->nkvh}, meta->dtype, device, device_ids[0]);
+        tensor_t k0 = Tensor::create({ntoken, meta->dh * meta->nkvh}, meta->dtype, device, device_ids[0]);
+        tensor_t v0 = Tensor::create({ntoken, meta->dh * meta->nkvh}, meta->dtype, device, device_ids[0]);
         llaisys::ops::linear(q, hidden_states, weights->attn_q_w[i]->tensor, weights->attn_q_b[i]->tensor);
-        llaisys::ops::linear(k, hidden_states, weights->attn_k_w[i]->tensor, weights->attn_k_b[i]->tensor);
-        llaisys::ops::linear(v, hidden_states, weights->attn_v_w[i]->tensor, weights->attn_v_b[i]->tensor);
+        llaisys::ops::linear(k0, hidden_states, weights->attn_k_w[i]->tensor, weights->attn_k_b[i]->tensor);
+        llaisys::ops::linear(v0, hidden_states, weights->attn_v_w[i]->tensor, weights->attn_v_b[i]->tensor);
 
         q = q->view({ntoken, meta->nh, meta->dh});
-        k = k->view({ntoken, meta->nkvh, meta->dh});
-        v = v->view({ntoken, meta->nkvh, meta->dh});
+        k0 = k0->view({ntoken, meta->nkvh, meta->dh});
+        v0 = v0->view({ntoken, meta->nkvh, meta->dh});
 
         // rope
         tensor_t rope_pos = Tensor::create({ntoken}, LLAISYS_DTYPE_I64, device, device_ids[0]);
         std::vector<int64_t> rope_pos_data(ntoken);
         for (size_t j = 0; j < ntoken; j++) {
-            rope_pos_data[j] = j;
+            rope_pos_data[j] = j + kvlen;
         }
         rope_pos->load(rope_pos_data.data());
         llaisys::ops::rope(q, q, rope_pos, meta->theta);
-        llaisys::ops::rope(k, k, rope_pos, meta->theta);
+        llaisys::ops::rope(k0, k0, rope_pos, meta->theta);
+
+        tensor_t k = Tensor::create({total_len, meta->nkvh, meta->dh}, meta->dtype, device, device_ids[0]);
+        tensor_t v = Tensor::create({total_len, meta->nkvh, meta->dh}, meta->dtype, device, device_ids[0]);
+        // kv-cache拼接
+        if (kvlen) {
+            // kv-cache拼接
+            kv_cache_k[i]->cat(k0, 0, k);
+            kv_cache_v[i]->cat(v0, 0, v);
+        } else {
+            // 如果kv-cache为空，直接使用当前的k,v
+            k = k0->copy();
+            v = v0->copy();
+        }
+        // 缓存kv
+        kv_cache_k[i] = k->copy();
+        kv_cache_v[i] = v->copy();
 
         // self-attention
         hidden_states = hidden_states->view({ntoken, meta->nh, meta->dh});
-        llaisys::ops::self_attention(hidden_states, q, k, v, 1.0f / std::sqrt(meta->dh));
+        llaisys::ops::self_attention(hidden_states, q, k, v, static_cast<float>(1.0f / std::sqrt(meta->dh)));
         hidden_states = hidden_states->view({ntoken, meta->hs});
         tensor_t hidden_states_out = Tensor::create({ntoken, meta->hs}, meta->dtype, device, device_ids[0]);
         llaisys::ops::linear(hidden_states_out, hidden_states, weights->attn_o_w[i]->tensor, nullptr);
@@ -157,6 +175,7 @@ int64_t Qwen2::Infer(int64_t *token_ids, size_t ntoken) {
     tensor_t max_idx = Tensor::create({1}, LLAISYS_DTYPE_I64, device, device_ids[0]);
     tensor_t max_val = Tensor::create({1}, meta->dtype, device, device_ids[0]);
     llaisys::ops::argmax(max_idx, max_val, logits);
+    // std::cerr << "nextToken is " << reinterpret_cast<int64_t *>(max_idx->data())[0] << std::endl;
     return reinterpret_cast<int64_t *>(max_idx->data())[0];
 }
 } // namespace llaisys::models
