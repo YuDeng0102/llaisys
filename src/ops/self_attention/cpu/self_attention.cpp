@@ -11,38 +11,35 @@ template <typename T>
 void self_attention_(T *attn_val, T *Q, T *K, T *V, float scale, size_t seq_len, size_t nh,
                      size_t d, size_t total_len, size_t nkvh) {
     auto attn_weight = std::vector(seq_len, std::vector(total_len, 0.0f));
+    size_t bias = total_len - seq_len;
     for (size_t h = 0; h < nh; h++) {
         size_t hkv = h / (nh / nkvh);
         float sum = 0;
         // size_t max_idx = std::numeric_limits<size_t>::max();
         for (size_t i = 0; i < seq_len; i++) {
-            for (size_t j = 0; j <= i; j++) {
+            for (size_t j = 0; j <= i + bias; j++) {
                 attn_weight[i][j] = 0;
                 for (size_t k = 0; k < d; k++) {
                     attn_weight[i][j] += llaisys::utils::cast<float>(Q[i * nh * d + h * d + k]) * llaisys::utils::cast<float>(K[j * nkvh * d + hkv * d + k]) * scale;
                 }
             }
             sum = 0;
-            float max_val = *std::max_element(attn_weight[i].begin(), attn_weight[i].begin() + i + 1);
-            for (size_t j = 0; j <= i; j++) {
+            float max_val = *std::max_element(attn_weight[i].begin(), attn_weight[i].begin() + i + 1 + bias);
+            for (size_t j = 0; j <= i + bias; j++) {
                 sum += std::exp(attn_weight[i][j] - max_val);
             }
-            // // 特殊处理
+            // // for debug
             if (sum == 0) {
-                // for (size_t j = 0; j <= i; j++) {
-                //     attn_weight[i][j] = 0.0f;
-                // }
-                //     attn_weight[i][max_idx] = 1.0f;
                 std::cerr << "sum is 0 in self-attention" << std::endl;
             }
 
-            for (size_t j = 0; j <= i; j++) {
+            for (size_t j = 0; j <= i + bias; j++) {
                 attn_weight[i][j] = std::exp(attn_weight[i][j] - max_val) / sum;
             }
 
             for (size_t k = 0; k < d; k++) {
                 float sum = 0;
-                for (size_t j = 0; j <= i; j++) {
+                for (size_t j = 0; j <= i + bias; j++) {
                     sum += attn_weight[i][j] * llaisys::utils::cast<float>(V[j * nkvh * d + hkv * d + k]);
                 }
                 attn_val[i * nh * d + h * d + k] = llaisys::utils::cast<T>(sum);
