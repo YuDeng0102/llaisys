@@ -1,5 +1,8 @@
 #include "op.hpp"
 #include "cpu/linear_cpu.hpp"
+#ifdef ENABLE_NVIDIA_API
+#include "nvidia/linear_cuda.cuh"
+#endif
 
 namespace llaisys::ops {
 void linear(tensor_t out, tensor_t in, tensor_t weight, tensor_t bias) {
@@ -19,16 +22,13 @@ void linear(tensor_t out, tensor_t in, tensor_t weight, tensor_t bias) {
     if (weight->shape()[1] != *in->shape().rbegin() || weight->shape()[0] != *out->shape().rbegin()) {
         throw std::runtime_error("linear op shape error");
     }
-    if (out->deviceType() == LLAISYS_DEVICE_CPU) {
-        return cpu::linear2d(out, in, weight, bias);
-    }
 
     switch (out->deviceType()) {
     case LLAISYS_DEVICE_CPU:
         return cpu::linear2d(out, in, weight, bias);
 #ifdef ENABLE_NVIDIA_API
     case LLAISYS_DEVICE_NVIDIA:
-        return gpu::linear2d(out, in, weight, bias);
+        return nvidia::linear2d(out, in, weight, bias);
 #endif
     default:
         EXCEPTION_UNSUPPORTED_DEVICE;

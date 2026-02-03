@@ -1,3 +1,4 @@
+import torch  # Import torch first to avoid CUDA library conflicts
 from typing import Sequence
 from .. import libllaisys
 from ..libllaisys import LIB_LLAISYS,LlaisysQwen2Meta, LlaisysQwen2Weights
@@ -5,7 +6,6 @@ from ..libllaisys import DeviceType,llaisysDataTypeStrtoCType, llaisysTensor_t
 from ..tensor import Tensor
 from pathlib import Path
 import safetensors,json
-import torch
 import ctypes
 from ctypes import  POINTER,c_int,c_void_p,c_int64
 from .utils import *

@@ -1,6 +1,7 @@
 #include "op.hpp"
 #include "cpu/rope.hpp"
 #include "llaisys.h"
+#include "nvidia/rope.cuh"
 
 namespace llaisys::ops {
 void rope(tensor_t out, tensor_t in, tensor_t pos_ids, float theta) {
@@ -14,17 +15,13 @@ void rope(tensor_t out, tensor_t in, tensor_t pos_ids, float theta) {
         throw std::runtime_error("rope tensor must be contiguous!");
     }
 
-    if (out->deviceType() == LLAISYS_DEVICE_CPU) {
-        return cpu::rope(out, in, pos_ids, theta);
-    }
-
     switch (out->deviceType()) {
     case LLAISYS_DEVICE_CPU:
         return cpu::rope(out, in, pos_ids, theta);
         break;
-#ifdef LLAISYS_DEVICE_NVIDIA
+#ifdef ENABLE_NVIDIA_API
     case LLAISYS_DEVICE_NVIDIA:
-        return device::nvidia::rope(out, in, pos_ids, theta);
+        return nvidia::rope(out->data(), in->data(), out->dtype(), pos_ids->data(), out->shape()[0], out->shape()[1], out->shape()[2] / 2, theta);
         break;
 #endif
     default:

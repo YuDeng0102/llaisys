@@ -37,6 +37,9 @@ target("llaisys-device")
     set_kind("static")
     add_deps("llaisys-utils")
     add_deps("llaisys-device-cpu")
+    if has_config("nv-gpu") then
+        add_deps("llaisys-device-nvidia")
+    end
 
     set_languages("cxx17")
     set_warnings("all", "error")
@@ -83,6 +86,9 @@ target_end()
 target("llaisys-ops")
     set_kind("static")
     add_deps("llaisys-ops-cpu")
+    if has_config("nv-gpu") then
+        add_deps("llaisys-ops-nvidia")
+    end
 
     set_languages("cxx17")
     set_warnings("all", "error")
@@ -90,12 +96,15 @@ target("llaisys-ops")
         add_cxflags("-fPIC", "-Wno-unknown-pragmas")
     end
     
+    add_includedirs("src")
+    if has_config("nv-gpu") then
+        add_includedirs("/usr/local/cuda/include")
+    end
     add_files("src/ops/*/*.cpp")
 
     on_install(function (target) end)
 target_end()
 
-target_end()
 target("llaisys")
     set_kind("shared")
     add_deps("llaisys-utils")

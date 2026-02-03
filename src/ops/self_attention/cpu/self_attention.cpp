@@ -28,10 +28,6 @@ void self_attention_(T *attn_val, T *Q, T *K, T *V, float scale, size_t seq_len,
             for (size_t j = 0; j <= i + bias; j++) {
                 sum += std::exp(attn_weight[i][j] - max_val);
             }
-            // // for debug
-            if (sum == 0) {
-                std::cerr << "sum is 0 in self-attention" << std::endl;
-            }
 
             for (size_t j = 0; j <= i + bias; j++) {
                 attn_weight[i][j] = std::exp(attn_weight[i][j] - max_val) / sum;
