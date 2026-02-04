@@ -9,13 +9,13 @@ __global__ void compute_qk_kernel(T *attn_score, T *q, T *k, float scale, size_t
         size_t t = idx % total_len;
         size_t hkv=h/(nh/nkvh);
 
-        T sum = 0;
+        float sum = 0;
         for (size_t i = 0; i < d; i++) {
             T q_val = q[s * nh * d + h * d + i];
             T k_val = k[t * nkvh * d + hkv * d + i];
-            sum += q_val * k_val;
+            sum += to_float(q_val) * to_float(k_val);
         }
-        attn_score[idx] = sum * to_cuda_type<T>(scale);
+        attn_score[idx] = to_cuda_type<T>(sum * scale);
     }
 }
 
@@ -62,11 +62,11 @@ __global__ void compute_attn_val_kernel(T*attn_val,T *attn_score, T *v, size_t s
         size_t i = idx % d;
         size_t hkv=h/(nh/nkvh);
 
-        T sum = 0;
+        float sum = 0;
         for (size_t t = 0; t < total_len; t++) {
-            sum += attn_score[s * nh * total_len + h * total_len + t] * v[t * nkvh * d + hkv * d + i];
+            sum += to_float(attn_score[s * nh * total_len + h * total_len + t]) * to_float(v[t * nkvh * d + hkv * d + i]);
         }
-        attn_val[idx] = sum;
+        attn_val[idx] = to_cuda_type<T>(sum);
     }
 
 
