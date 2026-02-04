@@ -335,8 +335,21 @@ tensor_t Tensor::reshape(const std::vector<size_t> &shape) const {
 }
 
 tensor_t Tensor::to(llaisysDeviceType_t device_type, int device) const {
-    TO_BE_IMPLEMENTED();
-    return std::shared_ptr<Tensor>(new Tensor(_meta, _storage));
+    tensor_t res = create(_meta.shape, _meta.dtype, device_type, device);
+    if(device_type==deviceType()){
+        core::context().runtime().api()->memcpy_sync(
+            res->data(), data(), numel() * elementSize(), LLAISYS_MEMCPY_D2D);
+    } else {
+        if(device_type==LLAISYS_DEVICE_CPU){
+            core::context().runtime().api()->memcpy_sync(
+                res->data(), data(), numel() * elementSize(), LLAISYS_MEMCPY_D2H);
+        } else if(this->deviceType()==LLAISYS_DEVICE_CPU){
+            core::context().setDevice(device_type, device);
+            core::context().runtime().api()->memcpy_sync(
+                res->data(), data(), numel() * elementSize(), LLAISYS_MEMCPY_H2D);
+        } 
+    }
+    return res;
 }
 
 tensor_t Tensor::copy() const {

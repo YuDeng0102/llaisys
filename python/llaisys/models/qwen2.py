@@ -76,7 +76,6 @@ class Qwen2:
             (c_int * len(device_ids))(*device_ids),
             len(device_ids),
         )
-        print("qwen2 model create",self.dtype, self.nlayer, self.bos_token_id, self.end_token_id)
         self.load_weights(weights)
         
     def load_weights(self, weights_dict: dict[str, torch.Tensor]):
