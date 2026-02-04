@@ -5,7 +5,7 @@
 #include <cmath>
 
 template <typename T>
-void swiglu_(T *out, const T *gate, const T *up, size_t numel) {
+void swiglu_cpu(T *out, const T *gate, const T *up, size_t numel) {
     for (size_t i = 0; i < numel; i++) {
         // Calculate gate[i] / (1 + exp(-gate[i]))
         // For numerical stability, we use the exp function
@@ -27,13 +27,13 @@ namespace llaisys::ops::cpu {
 void swiglu(std::byte *out, const std::byte *gate, const std::byte *up, llaisysDataType_t type, size_t numel) {
     switch (type) {
     case LLAISYS_DTYPE_F32:
-        return swiglu_(reinterpret_cast<float *>(out), reinterpret_cast<const float *>(gate),
+        return swiglu_cpu(reinterpret_cast<float *>(out), reinterpret_cast<const float *>(gate),
                        reinterpret_cast<const float *>(up), numel);
     case LLAISYS_DTYPE_BF16:
-        return swiglu_(reinterpret_cast<llaisys::bf16_t *>(out), reinterpret_cast<const llaisys::bf16_t *>(gate),
+        return swiglu_cpu(reinterpret_cast<llaisys::bf16_t *>(out), reinterpret_cast<const llaisys::bf16_t *>(gate),
                        reinterpret_cast<const llaisys::bf16_t *>(up), numel);
     case LLAISYS_DTYPE_F16:
-        return swiglu_(reinterpret_cast<llaisys::fp16_t *>(out), reinterpret_cast<const llaisys::fp16_t *>(gate),
+        return swiglu_cpu(reinterpret_cast<llaisys::fp16_t *>(out), reinterpret_cast<const llaisys::fp16_t *>(gate),
                        reinterpret_cast<const llaisys::fp16_t *>(up), numel);
     default:
         EXCEPTION_UNSUPPORTED_DATATYPE(type);

@@ -4,6 +4,7 @@
 #include <cuda_fp16.h>
 
 // CUDA kernel for embedding lookup
+namespace {
 template <typename T>
 __global__ void embedding_kernel(T *out, const int64_t *index, const T *weight, 
                                   size_t batch_size, size_t seq_len, size_t vocab_size) {
@@ -38,6 +39,7 @@ void embedding_(T *out, const int64_t *index, const T *weight,
         out, index, weight, batch_size, seq_len, vocab_size
     );
     CHECK_CUDA(cudaDeviceSynchronize());
+}
 }
 
 namespace llaisys::ops::nvidia {

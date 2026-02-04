@@ -4,6 +4,8 @@
 #include <cuda_fp16.h>
 #include <limits>
 
+namespace {
+
 // 获取类型的最小值
 template <typename T>
 __device__ __forceinline__ T get_lowest() {
@@ -92,6 +94,8 @@ void argmax_(const T *vals, size_t *max_idx, T *max_val, size_t numel) {
     CHECK_CUDA(cudaFree(max_val_per_block));
     CHECK_CUDA(cudaDeviceSynchronize());
 }
+
+} // namespace
 
 namespace llaisys::ops::nvidia {
 void argmax(std::byte *vals, std::byte *max_idx, std::byte *max_val, llaisysDataType_t dtype, size_t numel) {

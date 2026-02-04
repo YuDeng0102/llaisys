@@ -6,7 +6,7 @@
 
 namespace llaisys::ops::cpu {
 template <typename T>
-void rope_(T *out, const T *in, const int64_t *pos_ids, size_t seq_len, size_t heads, size_t d_model, float theta) {
+void rope_cpu(T *out, const T *in, const int64_t *pos_ids, size_t seq_len, size_t heads, size_t d_model, float theta) {
     auto pih = std::vector(seq_len, std::vector<float>(d_model));
     for (size_t i = 0; i < seq_len; ++i) {
         for (size_t j = 0; j < d_model; ++j) {
@@ -40,13 +40,13 @@ void rope(tensor_t out, tensor_t in, tensor_t pos_ids, float theta) {
     int64_t *pos_ids_ptr = reinterpret_cast<int64_t *>(pos_ids->data());
     switch (out->dtype()) {
     case LLAISYS_DTYPE_F32:
-        rope_(reinterpret_cast<float *>(out->data()), reinterpret_cast<const float *>(in->data()), pos_ids_ptr, seq_len, heads, d_model, theta);
+        rope_cpu(reinterpret_cast<float *>(out->data()), reinterpret_cast<const float *>(in->data()), pos_ids_ptr, seq_len, heads, d_model, theta);
         break;
     case LLAISYS_DTYPE_BF16:
-        rope_(reinterpret_cast<llaisys::bf16_t *>(out->data()), reinterpret_cast<const llaisys::bf16_t *>(in->data()), pos_ids_ptr, seq_len, heads, d_model, theta);
+        rope_cpu(reinterpret_cast<llaisys::bf16_t *>(out->data()), reinterpret_cast<const llaisys::bf16_t *>(in->data()), pos_ids_ptr, seq_len, heads, d_model, theta);
         break;
     case LLAISYS_DTYPE_F16:
-        rope_(reinterpret_cast<llaisys::fp16_t *>(out->data()), reinterpret_cast<const llaisys::fp16_t *>(in->data()), pos_ids_ptr, seq_len, heads, d_model, theta);
+        rope_cpu(reinterpret_cast<llaisys::fp16_t *>(out->data()), reinterpret_cast<const llaisys::fp16_t *>(in->data()), pos_ids_ptr, seq_len, heads, d_model, theta);
         break;
     default:
         EXCEPTION_UNSUPPORTED_DATATYPE(out->dtype());
