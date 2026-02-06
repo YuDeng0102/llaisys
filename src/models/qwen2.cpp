@@ -176,7 +176,7 @@ int64_t Qwen2::Infer(int64_t *token_ids, size_t ntoken) {
     tensor_t max_val = Tensor::create({1}, meta->dtype, device, device_ids[0]);
     llaisys::ops::argmax(max_idx, max_val, logits);
     // std::cerr << "nextToken is " << reinterpret_cast<int64_t *>(max_idx->data())[0] << std::endl;
-    max_idx=max_idx->to(LLAISYS_DEVICE_CPU);
+    max_idx=max_idx->to(LLAISYS_DEVICE_CPU,0);
     return reinterpret_cast<int64_t *>(max_idx->data())[0];
 }
 } // namespace llaisys::models
